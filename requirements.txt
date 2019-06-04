@@ -4,6 +4,7 @@
 gevent == 1.4.0
 gunicorn == 19.9.0
 flask == 1.0.2
+pywren-ibm-cloud == 1.0.13
 
 # default available packages for python3action
 beautifulsoup4 == 4.7.1

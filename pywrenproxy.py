@@ -1,40 +1,29 @@
 import sys
 import os
 import flask
-from gevent.pywsgi import WSGIServer
+import logging
+import time
 import requests as req
+from pywren_ibm_cloud import wrenlogging
+from pywren_ibm_cloud.action.handler import ibm_cloud_function_handler
 
+wrenlogging.ow_config(logging.INFO)
+logger = logging.getLogger('__main__')
 
 proxy = flask.Flask(__name__)
-proxy.debug = False
-# disable re-initialization of the executable unless explicitly allowed via an environment
-# variable PROXY_ALLOW_REINIT == "1" (this is generally useful for local testing and development)
-proxy.rejectReinit = 'PROXY_ALLOW_REINIT' not in os.environ or os.environ['PROXY_ALLOW_REINIT'] != "1"
-proxy.initialized = False
-runner = None
-
-
-def setRunner(r):
-    global runner
-    runner = r
 
 
 @proxy.route('/', methods=['GET', 'POST'])
 def net_test():
-    print('------------', flask.request.method, '------------')
-    #args = request.args
-    #print('Args: ', args)
-    req_data = flask.request.get_json()
-    print('Data: ', req_data)
+    print('-- Checking Internet connection: {} Request'.format(flask.request.method))
+    message = flask.request.get_json(force=True, silent=True)
+    print(message, flush=True)
 
-    #return jsonify({'Internet Connection': "True"})
-
-    # Ensure no: k get serviceentry
     url = os.environ.get('URL', 'https://httpbin.org/get')
     resp = req.get(url)
-    #print(resp.text)
+    print(resp.status_code, flush=True)
 
-    #time.sleep(10)
+    time.sleep(20)
 
     if resp.status_code == 200:
         return_statement = {'Internet Connection': "True"}
@@ -45,38 +34,6 @@ def net_test():
     return flask.jsonify(return_statement)
 
 
-@proxy.route('/init', methods=['POST'])
-def init():
-    if proxy.rejectReinit is True and proxy.initialized is True:
-        msg = 'Cannot initialize the action more than once.'
-        sys.stderr.write(msg + '\n')
-        response = flask.jsonify({'error': msg})
-        response.status_code = 403
-        return response
-
-    message = flask.request.get_json(force=True, silent=True)
-    if message and not isinstance(message, dict):
-        flask.abort(404)
-    else:
-        value = message.get('value', {}) if message else {}
-
-    if not isinstance(value, dict):
-        flask.abort(404)
-
-    try:
-        status = runner.init(value)
-    except Exception as e:
-        status = False
-
-    if status is True:
-        proxy.initialized = True
-        return ('OK', 200)
-    else:
-        response = flask.jsonify({'error': 'The action failed to generate or locate a binary. See logs for details.'})
-        response.status_code = 502
-        return complete(response)
-
-
 @proxy.route('/run', methods=['POST'])
 def run():
     def error():
@@ -85,33 +42,23 @@ def run():
         return complete(response)
 
     message = flask.request.get_json(force=True, silent=True)
+    print(message, flush=True)
     if message and not isinstance(message, dict):
         return error()
-    else:
-        args = message.get('value', {}) if message else {}
-        if not isinstance(args, dict):
-            return error()
 
-    if runner.verify():
-        try:
-            code, result = runner.run(args, runner.env(message or {}))
-            response = flask.jsonify(result)
-            response.status_code = code
-        except Exception as e:
-            response = flask.jsonify({'error': 'Internal error. {}'.format(e)})
-            response.status_code = 500
-    else:
-        response = flask.jsonify({'error': 'The action failed to locate a binary. See logs for details.'})
-        response.status_code = 502
+    logger.info("Starting knative Function execution")
+    ibm_cloud_function_handler(message)
+    result = {"Execution": "Finished"}
+    response = flask.jsonify(result)
+    response.status_code = 202
+
     return complete(response)
 
 
 def complete(response):
     # Add sentinel to stdout/stderr
-    sys.stdout.write('%s\n' % 'XXX_THE_END_OF_AN_ACTIVATION_XXX')
     sys.stdout.flush()
     sys.stderr.write('%s\n' % 'XXX_THE_END_OF_AN_ACTIVATION_XXX')
-    sys.stderr.flush()
     return response
 
 

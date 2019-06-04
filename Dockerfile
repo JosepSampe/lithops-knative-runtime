@@ -22,7 +22,8 @@ COPY requirements.txt requirements.txt
 RUN pip install --upgrade pip setuptools six && pip install --no-cache-dir -r requirements.txt
 
 # Copy PyWren proxy to the container image.
-RUN mkdir -p /pywrenProxy
-COPY pywrenproxy.py /pywrenProxy
+ENV APP_HOME /pywrenProxy
+WORKDIR $APP_HOME
+COPY pywrenproxy.py .
 
-CMD exec gunicorn --bind :$PORT --workers 1 pywrenProxy:pywrenproxy
+CMD exec gunicorn --bind :$PORT --workers 1 pywrenproxy:proxy
