@@ -1,0 +1,14 @@
+apiVersion: serving.knative.dev/v1alpha1
+kind: Service
+metadata:
+  name: pywren-runtime
+  #namespace: default
+spec:
+  template:
+    spec:
+      containerConcurrency: 1
+      containers:
+      - image: docker.io/jsampe/pywren-knative-runtime
+        env:
+        - name: URL
+          value: "https://httpbin.org/get"
