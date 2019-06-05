@@ -26,4 +26,4 @@ ENV APP_HOME /pywrenProxy
 WORKDIR $APP_HOME
 COPY pywrenproxy.py .
 
-CMD exec gunicorn --bind :$PORT --workers 1 pywrenproxy:proxy
+CMD exec gunicorn --bind :$PORT --workers 1 --timeout 600 pywrenproxy:proxy

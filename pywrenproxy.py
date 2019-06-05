@@ -21,16 +21,17 @@ def net_test():
 
     url = os.environ.get('URL', 'https://httpbin.org/get')
     resp = req.get(url)
-    print(resp.status_code, flush=True)
+    # print(resp.status_code, flush=True)
 
-    time.sleep(20)
+    print('Sleeping 30 seconds', flush=True)
+    time.sleep(30)
+    print('Before sleep', flush=True)
 
     if resp.status_code == 200:
         return_statement = {'Internet Connection': "True"}
     else:
         return_statement = {'Internet Connection': "False"}
 
-    sys.stdout.flush()
     return flask.jsonify(return_statement)
 
 
