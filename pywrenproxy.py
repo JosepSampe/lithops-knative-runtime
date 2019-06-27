@@ -5,7 +5,7 @@ import logging
 import time
 import requests as req
 from pywren_ibm_cloud import wrenlogging
-from pywren_ibm_cloud.action.handler import ibm_cloud_function_handler
+from pywren_ibm_cloud.action.handler import function_handler
 
 wrenlogging.ow_config(logging.INFO)
 logger = logging.getLogger('__main__')
@@ -48,7 +48,7 @@ def run():
         return error()
 
     logger.info("Starting knative Function execution")
-    ibm_cloud_function_handler(message)
+    function_handler(message)
     result = {"Execution": "Finished"}
     response = flask.jsonify(result)
     response.status_code = 202

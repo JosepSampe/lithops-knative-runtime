@@ -1,14 +1,25 @@
-apiVersion: serving.knative.dev/v1alpha1
+apiVersion: serving.knative.dev/v1beta1
 kind: Service
 metadata:
   name: pywren-runtime
   #namespace: default
 spec:
   template:
+    metadata:
+      annotations:
+        # Target 1 in-flight-requests per pod.
+        autoscaling.knative.dev/target: "1"
+        autoscaling.knative.dev/minScale: "0"
+        autoscaling.knative.dev/maxScale: "1000"
     spec:
       containerConcurrency: 1
+      timeoutSeconds: 600
       containers:
       - image: docker.io/jsampe/pywren-knative-runtime
         env:
         - name: URL
           value: "https://httpbin.org/get"
+        resources:
+          limits:
+            memory: 128Mi
+            cpu: 250m
