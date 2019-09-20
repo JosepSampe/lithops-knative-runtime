@@ -2,40 +2,21 @@ import sys
 import os
 import flask
 import logging
-import time
+import pkgutil
 import requests as req
-from pywren_ibm_cloud import wrenlogging
-from pywren_ibm_cloud.action.handler import function_handler
+from pywren_ibm_cloud.config import cloud_logging_config
+from pywren_ibm_cloud.runtime.function_handler import function_handler
 
-wrenlogging.ow_config(logging.INFO)
+cloud_logging_config(logging.INFO)
 logger = logging.getLogger('__main__')
+
+
+TOTAL_REQUESTS = 0
 
 proxy = flask.Flask(__name__)
 
 
-@proxy.route('/', methods=['GET', 'POST'])
-def net_test():
-    print('-- Checking Internet connection: {} Request'.format(flask.request.method))
-    message = flask.request.get_json(force=True, silent=True)
-    print(message, flush=True)
-
-    url = os.environ.get('URL', 'https://httpbin.org/get')
-    resp = req.get(url)
-    # print(resp.status_code, flush=True)
-
-    print('Sleeping 30 seconds', flush=True)
-    time.sleep(30)
-    print('Before sleep', flush=True)
-
-    if resp.status_code == 200:
-        return_statement = {'Internet Connection': "True"}
-    else:
-        return_statement = {'Internet Connection': "False"}
-
-    return flask.jsonify(return_statement)
-
-
-@proxy.route('/run', methods=['POST'])
+@proxy.route('/', methods=['POST'])
 def run():
     def error():
         response = flask.jsonify({'error': 'The action did not receive a dictionary as an argument.'})
@@ -54,6 +35,44 @@ def run():
     response.status_code = 202
 
     return complete(response)
+
+
+@proxy.route('/preinstalls', methods=['POST'])
+def preinstalls_task():
+    logger.info("Starting Knative Function execution")
+    print("Extracting preinstalled Python modules...")
+    runtime_meta = dict()
+    mods = list(pkgutil.iter_modules())
+    runtime_meta['preinstalls'] = [entry for entry in sorted([[mod, is_pkg] for _, mod, is_pkg in mods])]
+    python_version = sys.version_info
+    runtime_meta['python_ver'] = str(python_version[0])+"."+str(python_version[1])
+    response = flask.jsonify(runtime_meta)
+    response.status_code = 202
+
+    return complete(response)
+
+
+@proxy.route('/test', methods=['GET', 'POST'])
+def net_test():
+    global TOTAL_REQUESTS
+    TOTAL_REQUESTS = TOTAL_REQUESTS+1
+    print('-- Checking Internet connection: {} Request'.format(flask.request.method))
+    message = flask.request.get_json(force=True, silent=True)
+    print(message, flush=True)
+
+    url = os.environ.get('URL', 'https://httpbin.org/get')
+    resp = req.get(url)
+    print(resp.status_code, flush=True)
+    #print('Sleeping 30 seconds', flush=True)
+    #time.sleep(30)
+    #print('Before sleep', flush=True)
+
+    if resp.status_code == 200:
+        return_statement = {'Internet Connection': "True", "Total Requests": TOTAL_REQUESTS}
+    else:
+        return_statement = {'Internet Connection': "False", "Total Requests": TOTAL_REQUESTS}
+
+    return complete(flask.jsonify(return_statement))
 
 
 def complete(response):
