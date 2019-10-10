@@ -24,9 +24,13 @@ def run():
         return complete(response)
 
     message = flask.request.get_json(force=True, silent=True)
-    print(message, flush=True)
     if message and not isinstance(message, dict):
         return error()
+    print('++++++++++')
+    pywren_lib_zip = os.environ.get('PYWREN_LIB_0', None)
+
+    if pywren_lib_zip:
+        print('-------------------')
 
     logger.info("Starting knative Function execution")
     function_handler(message)
@@ -37,10 +41,10 @@ def run():
     return complete(response)
 
 
-@proxy.route('/preinstalls', methods=['POST'])
+@proxy.route('/preinstalls', methods=['GET', 'POST'])
 def preinstalls_task():
-    logger.info("Starting Knative Function execution")
-    print("Extracting preinstalled Python modules...")
+    logger.info("Extracting preinstalled Python modules...")
+
     runtime_meta = dict()
     mods = list(pkgutil.iter_modules())
     runtime_meta['preinstalls'] = [entry for entry in sorted([[mod, is_pkg] for _, mod, is_pkg in mods])]
@@ -48,6 +52,7 @@ def preinstalls_task():
     runtime_meta['python_ver'] = str(python_version[0])+"."+str(python_version[1])
     response = flask.jsonify(runtime_meta)
     response.status_code = 202
+    logger.info("Done!")
 
     return complete(response)
 
@@ -56,10 +61,16 @@ def preinstalls_task():
 def net_test():
     global TOTAL_REQUESTS
     TOTAL_REQUESTS = TOTAL_REQUESTS+1
-    print('-- Checking Internet connection: {} Request'.format(flask.request.method))
+    logger.info('Checking Internet connection: {} Request'.format(flask.request.method))
     message = flask.request.get_json(force=True, silent=True)
+
     print(message, flush=True)
 
+    pywren_lib_zip0 = os.environ.get('PYWREN_LIB_0', None)
+    pywren_lib_zip1 = os.environ.get('PYWREN_LIB_1', None)
+    pywren_lib_zip2 = os.environ.get('PYWREN_LIB_2', None)
+
+    """
     url = os.environ.get('URL', 'https://httpbin.org/get')
     resp = req.get(url)
     print(resp.status_code, flush=True)
@@ -71,14 +82,16 @@ def net_test():
         return_statement = {'Internet Connection': "True", "Total Requests": TOTAL_REQUESTS}
     else:
         return_statement = {'Internet Connection': "False", "Total Requests": TOTAL_REQUESTS}
-
+    """
+    return_statement = {"Total Requests": TOTAL_REQUESTS}
     return complete(flask.jsonify(return_statement))
 
 
 def complete(response):
     # Add sentinel to stdout/stderr
+    sys.stdout.write('%s\n' % 'XXX_THE_END_OF_AN_ACTIVATION_XXX')
     sys.stdout.flush()
-    sys.stderr.write('%s\n' % 'XXX_THE_END_OF_AN_ACTIVATION_XXX')
+
     return response
 
 

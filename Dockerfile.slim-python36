@@ -14,9 +14,11 @@ RUN pip install --upgrade setuptools six \
 	    numpy \
 	    pywren-ibm-cloud
 
-# Copy PyWren proxy to the container image.
-ENV APP_HOME /pywrenProxy
+# Copy PyWren proxy  and lib to the container image.
+ENV APP_HOME /pywren
 WORKDIR $APP_HOME
+
+COPY ../../pywren_ibm_cloud ./pywren_ibm_cloud
 COPY pywrenproxy.py .
 
-CMD exec gunicorn --bind :$PORT --workers 1 --timeout 600 pywrenproxy:proxy
+CMD exec gunicorn --bind :$PORT --workers 1 pywrenproxy:proxy

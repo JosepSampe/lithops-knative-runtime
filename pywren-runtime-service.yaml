@@ -8,16 +8,17 @@ spec:
     metadata:
       annotations:
         # Target 1 in-flight-requests per pod.
-        autoscaling.knative.dev/target: "1"
+        #autoscaling.knative.dev/target: "1"  # soft-limit
         autoscaling.knative.dev/minScale: "0"
-        autoscaling.knative.dev/maxScale: "1000"
+        autoscaling.knative.dev/maxScale: "100"
+        autoscaling.knative.dev/targetBurstCapacity: "100"
     spec:
       containerConcurrency: 1
       timeoutSeconds: 600
       containers:
       - image: docker.io/jsampe/pywren-knative-runtime
         env:
-        - name: URL
+        - name: PYWREN_LIB
           value: "https://httpbin.org/get"
         resources:
           limits:
