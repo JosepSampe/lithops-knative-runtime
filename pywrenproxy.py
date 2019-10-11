@@ -26,11 +26,6 @@ def run():
     message = flask.request.get_json(force=True, silent=True)
     if message and not isinstance(message, dict):
         return error()
-    print('++++++++++')
-    pywren_lib_zip = os.environ.get('PYWREN_LIB_0', None)
-
-    if pywren_lib_zip:
-        print('-------------------')
 
     logger.info("Starting knative Function execution")
     function_handler(message)
@@ -66,11 +61,6 @@ def net_test():
 
     print(message, flush=True)
 
-    pywren_lib_zip0 = os.environ.get('PYWREN_LIB_0', None)
-    pywren_lib_zip1 = os.environ.get('PYWREN_LIB_1', None)
-    pywren_lib_zip2 = os.environ.get('PYWREN_LIB_2', None)
-
-    """
     url = os.environ.get('URL', 'https://httpbin.org/get')
     resp = req.get(url)
     print(resp.status_code, flush=True)
@@ -82,8 +72,8 @@ def net_test():
         return_statement = {'Internet Connection': "True", "Total Requests": TOTAL_REQUESTS}
     else:
         return_statement = {'Internet Connection': "False", "Total Requests": TOTAL_REQUESTS}
-    """
-    return_statement = {"Total Requests": TOTAL_REQUESTS}
+
+    # return_statement = {"Total Requests": TOTAL_REQUESTS}
     return complete(flask.jsonify(return_statement))
 
 
